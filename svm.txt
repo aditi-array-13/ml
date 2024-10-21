@@ -1,0 +1,85 @@
+from sklearn import datasets
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
+from sklearn.metrics import classification_report, confusion_matrix
+import numpy as np
+
+# Load the MNIST dataset (digits)
+digits = datasets.load_digits()
+
+# Display some sample images and their labels
+fig, axes = plt.subplots(nrows=2, ncols=5, figsize=(10, 4))
+for i, ax in enumerate(axes.flat):
+    ax.imshow(digits.images[i], cmap='gray')
+    ax.set_title(f"Label: {digits.target[i]}")  # Fixed typo
+    ax.axis('off')
+plt.tight_layout()
+plt.show()
+
+# Split dataset into features (X) and labels (y)
+X, y = digits.data, digits.target
+
+# Train-test split
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Normalize the data
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+
+# Create an SVM model (with RBF kernel)
+svm_model = SVC(kernel='rbf', C=10, gamma=0.001)
+
+# Train the model
+svm_model.fit(X_train, y_train)
+
+# Make predictions
+y_pred = svm_model.predict(X_test)
+
+# Evaluate the model
+print(confusion_matrix(y_test, y_pred))
+print(classification_report(y_test, y_pred))
+
+# Visualize some predictions
+fig, axes = plt.subplots(nrows=2, ncols=5, figsize=(10, 4))
+for i, ax in enumerate(axes.flat):
+    ax.imshow(X_test[i].reshape(8, 8), cmap='gray')
+    ax.set_title(f"Predicted: {y_pred[i]}")
+    ax.axis('off')
+plt.tight_layout()
+plt.show()
+
+# Function to predict and visualize a digit based on user input
+def predict_and_visualize_digit(digit):
+    # Find indices of the input digit in the dataset
+    digit_indices = np.where(digits.target == digit)[0]
+
+    if len(digit_indices) == 0:
+        print(f"No images found for digit {digit}")
+        return
+
+    # Select a random image of the input digit
+    selected_index = np.random.choice(digit_indices)
+    selected_image = digits.images[selected_index]
+    selected_image_data = digits.data[selected_index]
+
+    # Predict the digit using the trained model
+    selected_image_data_scaled = scaler.transform([selected_image_data])
+    predicted_digit = svm_model.predict(selected_image_data_scaled)
+
+    # Visualize the input image and prediction
+    plt.imshow(selected_image, cmap='gray')
+    plt.title(f"Original: {digit}, Predicted: {predicted_digit[0]}")
+    plt.axis('off')
+    plt.show()
+
+# Take input from user for digit to visualize and predict
+user_input = int(input("Please enter a digit (0-9) to visualize and predict: "))
+
+# Call the function to predict and visualize
+if 0 <= user_input <= 9:
+    predict_and_visualize_digit(user_input)
+else:
+    print("Error: Please enter a valid digit between 0 and 9.")

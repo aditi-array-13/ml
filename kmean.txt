@@ -1,0 +1,65 @@
+# Importing required libraries
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import silhouette_score
+
+# To ignore warnings
+import warnings
+warnings.filterwarnings("ignore")
+
+# Load the dataset
+url = "https://raw.githubusercontent.com/uiuc-cse/data-fa14/gh-pages/data/iris.csv"
+iris_data = pd.read_csv(url)
+
+# Display the first 5 rows of the dataset
+print(iris_data.head())
+
+# Remove the 'species' column as it's not needed for clustering
+iris_features = iris_data.drop(columns=['species'])
+
+# Standardize the features
+scaler = StandardScaler()
+iris_scaled = scaler.fit_transform(iris_features)
+
+# Display the scaled data
+print(iris_scaled[:5])
+
+
+# Determine the number of clusters using the Elbow Method
+sse = []  # Sum of squared distances to the closest cluster center
+k_range = range(1, 11)
+
+for k in k_range:
+    kmeans = KMeans(n_clusters=k, random_state=42)
+    kmeans.fit(iris_scaled)
+    sse.append(kmeans.inertia_)  # Inertia represents within-cluster sum of squared errors
+
+# Plot the elbow curve
+plt.figure(figsize=(8, 5))
+plt.plot(k_range, sse, marker='o', linestyle='--')
+plt.title('Elbow Method for Optimal k')
+plt.xlabel('Number of clusters (k)')
+plt.ylabel('Sum of Squared Errors (SSE)')
+plt.show()
+
+# Fit K-Means with the optimal number of clusters (for example, k=3 based on the elbow plot)
+kmeans = KMeans(n_clusters=3, random_state=42)
+kmeans.fit(iris_scaled)
+
+# Add the cluster labels to the original dataset
+iris_data['Cluster'] = kmeans.labels_
+
+# Display the dataset with cluster labels
+print(iris_data.head())
+
+# Print the cluster centers
+print("Cluster Centers:")
+print(kmeans.cluster_centers_)
+
+# Calculate the Silhouette score
+silhouette_avg = silhouette_score(iris_scaled, kmeans.labels_)
+print(f'Silhouette Score for {kmeans.n_clusters} clusters: {silhouette_avg}')
+
