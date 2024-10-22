@@ -1,0 +1,94 @@
+# Import necessary libraries
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression, Ridge, Lasso
+from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.preprocessing import StandardScaler
+
+# Load the dataset (corrected path)
+dataset = 'uber.csv'
+data = pd.read_csv(dataset)
+
+# Reduce dataset size to 20%
+data_sampled = data.sample(frac=0.3, random_state=42)
+
+# Pre-process the dataset
+# Convert pickup and drop-off datetime columns to datetime type
+data_sampled['pickup_datetime'] = pd.to_datetime(data_sampled['pickup_datetime'])
+
+# Extract features from datetime
+data_sampled['hour'] = data_sampled['pickup_datetime'].dt.hour
+data_sampled['day'] = data_sampled['pickup_datetime'].dt.day
+data_sampled['month'] = data_sampled['pickup_datetime'].dt.month
+data_sampled['year'] = data_sampled['pickup_datetime'].dt.year
+
+# Handle missing values
+data_sampled = data_sampled.dropna()
+
+# Handle categorical variables (convert 'pickup_location' and 'dropoff_location' if needed)
+data_sampled = pd.get_dummies(data_sampled, drop_first=True, sparse=True)
+
+# Identify outliers using IQR and remove them
+Q1 = data_sampled['fare_amount'].quantile(0.25)
+Q3 = data_sampled['fare_amount'].quantile(0.75)
+IQR = Q3 - Q1
+data_sampled = data_sampled[~((data_sampled['fare_amount'] < (Q1 - 1.5 * IQR)) | (data_sampled['fare_amount'] > (Q3 + 1.5 * IQR)))]
+
+# Split the dataset into features and target variable
+X = data_sampled.drop(columns=['fare_amount', 'pickup_datetime'])
+y = data_sampled['fare_amount']
+
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Standardize the features
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+# Implement Linear Regression, Ridge, and Lasso Models
+# Linear Regression
+lr = LinearRegression()
+lr.fit(X_train_scaled, y_train)
+y_pred_lr = lr.predict(X_test_scaled)
+
+# Ridge Regression
+ridge = Ridge(alpha=1.0)
+ridge.fit(X_train_scaled, y_train)
+y_pred_ridge = ridge.predict(X_test_scaled)
+
+# Lasso Regression
+lasso = Lasso(alpha=0.1)
+lasso.fit(X_train_scaled, y_train)
+y_pred_lasso = lasso.predict(X_test_scaled)
+
+# Evaluate the models
+def evaluate_model(y_true, y_pred, model_name):
+    mse = mean_squared_error(y_true, y_pred)
+    rmse = np.sqrt(mse)
+    r2 = r2_score(y_true, y_pred)
+    print(f'{model_name} Performance:')
+    print(f'R² Score: {r2:.4f}')
+    print(f'RMSE: {rmse:.4f}')
+    print('-' * 30)
+
+# Evaluate Linear Regression
+evaluate_model(y_test, y_pred_lr, 'Linear Regression')
+
+# Evaluate Ridge Regression
+evaluate_model(y_test, y_pred_ridge, 'Ridge Regression')
+
+# Evaluate Lasso Regression
+evaluate_model(y_test, y_pred_lasso, 'Lasso Regression')
+
+# Compare the models
+models_comparison = pd.DataFrame({
+    'Model': ['Linear Regression', 'Ridge Regression', 'Lasso Regression'],
+    'R² Score': [r2_score(y_test, y_pred_lr), r2_score(y_test, y_pred_ridge), r2_score(y_test, y_pred_lasso)],
+    'RMSE': [np.sqrt(mean_squared_error(y_test, y_pred_lr)), np.sqrt(mean_squared_error(y_test, y_pred_ridge)), np.sqrt(mean_squared_error(y_test, y_pred_lasso))]
+})
+
+print(models_comparison)
