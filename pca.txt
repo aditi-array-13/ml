@@ -13,12 +13,10 @@ url = 'https://media.geeksforgeeks.org/wp-content/uploads/Wine.csv'
 data = pd.read_csv(url)
 data
 
-# Filter the dataset to include only red and white wines (assuming these are represented by specific Customer_Segment values)
-# Example: Let's assume '1' represents red wine and '2' represents white wine
+# Filter the dataset to include only red and white wines from Customer_Segment
 red_white_data = data[data['Customer_Segment'].isin([1, 2])]
 
 # Step 2: Preprocess the data
-# Extract features (all columns except the target variable 'Customer_Segment')
 features = red_white_data.columns[1:]
 
 # Separate out the features and the target variable
@@ -30,8 +28,7 @@ scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
 
 # Step 3: Apply PCA
-# Instantiate PCA and fit the data
-pca = PCA(n_components=2)  # Let's reduce to 2 components for visualization
+pca = PCA(n_components=2)
 principal_components = pca.fit_transform(X_scaled)
 
 # Create a DataFrame with the principal components
@@ -41,7 +38,6 @@ principal_df = pd.DataFrame(data=principal_components, columns=['PC1', 'PC2'])
 principal_df['Customer_Segment'] = y
 
 # Step 4: Visualize the results
-# Plot the principal components
 plt.figure(figsize=(10, 7))
 sns.scatterplot(data=principal_df, x='PC1', y='PC2', hue='Customer_Segment', palette='Set1', alpha=0.7)
 plt.title('PCA of Wine Dataset (Red vs White)')
